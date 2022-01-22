@@ -6,8 +6,6 @@
 #include <windows.h>
 
 #define PI 3.14159265357
-
-
 //GLAD--------
 #include <glad/glad.h>
 

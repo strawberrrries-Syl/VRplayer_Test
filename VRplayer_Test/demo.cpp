@@ -44,10 +44,9 @@ extern "C"
 #include "shader.h"
 #include "camera.h"
 
+// video size setting
 const unsigned int SCR_WIDTH = 1280;
 const unsigned int SCR_HEIGHT = 720;
-
-
 
 //---------------- functions ---------------------
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
@@ -57,8 +56,6 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 
 //----------- shaders: in program --------------
-
-
 //---------------- camera view ---------------------
 //----------- 3.0f --> outside to inside || 0.0f ---> inside to outside --------------
 Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -156,8 +153,7 @@ int main(int argc, char* argv[])
     memcpy(vertices + 3, glm::value_ptr(tex), 2 * sizeof(GLfloat));
 
     vert_index++;
-
-
+    
     for (GLuint i = 1; i < longitude; i++)
     {
         a = glm::radians(i * Voffset);
@@ -186,8 +182,6 @@ int main(int argc, char* argv[])
     memcpy(vertices + 5 * vert_index + 3, glm::value_ptr(tex), 2 * sizeof(GLfloat));
     
     //-------------------- end vertex calculation------------------------
-
-
     //-------------------- define index -------------------------
     GLuint indices[8000];
 
@@ -225,19 +219,13 @@ int main(int argc, char* argv[])
     //---------------------end index--------------------------
 
    
-
-
-
     //---------------position vector (center of window) --------------------
     glm::vec3 spherePositions = glm::vec3(0.0f,  0.0f,  0.0f);
-
-
     // buffer objects
     GLuint VBO1, VAO1, EBO1;             //
     glGenBuffers(1, &VBO1);          // VBO Vertex Buffer Objects generating
     // aim: store vertex datas & settings
     glGenVertexArrays(1, &VAO1);    // generating VAO vertex objects
-    //
     glGenBuffers(1, &EBO1);
     // index buffer object
 
@@ -245,8 +233,7 @@ int main(int argc, char* argv[])
     glBindBuffer(GL_ARRAY_BUFFER, VBO1);    // bound the VBO buffer object to vertex buffer object（GL_ARRAY_BUFFER）
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
     //finishing storing vertex data
-
-
+    
     // bound index
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO1);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
@@ -259,18 +246,10 @@ int main(int argc, char* argv[])
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
 
-    //
-    
     // set layout of color property as 1
     glBindVertexArray(0);           // unbound VAO
 
     // texture operating--------------------------------------------
-
-   
-
-
-
-
     //IplImage* image;// = cvLoadImage("3.png", 1);		// input image
     // for videos, should read frames 
 
@@ -299,7 +278,6 @@ int main(int argc, char* argv[])
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     glBindTexture(GL_TEXTURE_2D, 0);
-
     glEnable(GL_DEPTH_TEST);
 
      //--------------------------------------------------------------------
@@ -320,7 +298,7 @@ int main(int argc, char* argv[])
     char filepath[] = "14.mp4";
     //FILE* fp;
     int frame_cnt;
-    pFormatCtx = avformat_alloc_context();		//
+    pFormatCtx = avformat_alloc_context();		
 
     /*       -------------- read a video steam------------------       */
     if (avformat_open_input(&pFormatCtx, filepath, NULL, NULL) != 0) {
@@ -376,12 +354,10 @@ int main(int argc, char* argv[])
 
     frame_cnt = 0;
 
-
     //--------------------------------------------------------------------
     //--------------------------------------------------------------------
     //--------------------------   LOOP   --------------------------------
-
-
+    
     while (av_read_frame(pFormatCtx, packet) >= 0) {
         
         if (glfwWindowShouldClose(window))   break;
@@ -457,9 +433,6 @@ int main(int argc, char* argv[])
         glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
         // Note: currently we set the projection matrix each frame, but since the projection matrix rarely changes it's often best practice to set it outside the main loop only once.
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, glm::value_ptr(projection));
-
-
-
         glBindVertexArray(VAO1);
 
         //-------------------MVP change--------------------
@@ -473,18 +446,12 @@ int main(int argc, char* argv[])
 
         //-------------------- draw ---------------------
         glDrawElements(GL_TRIANGLES, (indi_index - 1), GL_UNSIGNED_INT, 0);
-
-
         glBindVertexArray(0);
-
-        glfwSwapBuffers(window);//swap color buffer, 交换颜色缓冲，用来绘制图像
-
-
+        glfwSwapBuffers(window);//swap color buffer for texture drawing
         //av_free_packet(packet);
     }
 
     sws_freeContext(img_convert_ctx);
-
     av_frame_free(&pFrameYUV);
     av_frame_free(&pFrame);
     avcodec_close(pCodecCtx);
@@ -528,7 +495,6 @@ void do_movement()
         camera.ProcessKeyboard(RIGHT, deltaTime);
 }
 
-
 void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 {
     if (firstMouse)             //mouse call back 
@@ -551,4 +517,3 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(yoffset);
 }
-

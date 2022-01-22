@@ -14,7 +14,7 @@
 //GLFW----------
 #include <GLFW/glfw3.h>
 
-//OpenCV---------´ò¿ªÎÄ¼ş/ÎÆÀí
+//OpenCV---------open the file/texture
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
@@ -27,7 +27,8 @@
 #include <glm/glm/mat4x4.hpp> // glm::mat4
 
 //ffmpeg-------------audio lib
-#define __STDC_CONSTANT_MACROS		//Ê¹ÓÃffmpeg±ØĞë¼ÓÈëµÄÉùÃ÷
+#define __STDC_CONSTANT_MACROS		//declare ffmpeg
+
 extern "C"
 {
     #include "libavcodec/avcodec.h"
@@ -38,7 +39,7 @@ extern "C"
     #include "libavutil/avutil.h"
     #include "libpostproc/postprocess.h"
     #include "libswresample/swresample.h"
-    #include "libavutil/imgutils.h"		//getsize ±»·ñ¾ö£¬Ìæ»»Ê±Òª¼ÓµÄÍ·ÎÄ¼ş
+    #include "libavutil/imgutils.h"		
 };
 
 //own head program-----------
@@ -50,18 +51,18 @@ const unsigned int SCR_HEIGHT = 720;
 
 
 
-//----------------º¯ÊıÉùÃ÷---------------------
+//---------------- functions ---------------------
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 void do_movement();
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 
 
-//-----------shaders: in program--------------
+//----------- shaders: in program --------------
 
 
-//----------------ÊÓ½Ç±ä»¯---------------------
-//-----------°Ñ3.0f±ä³É0.0f¾ÍÄÜ´ÓÀïÃæÏòÍâ¿´--------------
+//---------------- camera view ---------------------
+//----------- 3.0f --> outside to inside || 0.0f ---> inside to outside --------------
 Camera camera(glm::vec3(0.0f, 0.0f, 0.0f));
 GLfloat lastX = SCR_WIDTH / 2.0;
 GLfloat lastY = SCR_HEIGHT / 2.0;
@@ -74,11 +75,8 @@ GLfloat deltaTime = 0.0f;	// Time between current frame and last frame
 GLfloat lastFrame = 0.0f;  	// Time of last frame
 
 //YUV file
-
 const int pixel_w = 1280, pixel_h = 720;
 unsigned char buffer[pixel_w * pixel_h * 3 / 2];
-
-
 
 //-----------------initialize---------------------
 
@@ -88,78 +86,71 @@ int main(int argc, char* argv[])
 {   
 
     //----------------GLFW init-----------------
-    glfwInit();//³õÊ¼»¯glfw
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);//glfwµÄÖ÷°æ±¾ºÅÎª3
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);//glfwµÄ´Î°æ±¾ºÅÎª3
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);//ºËĞÄÄ£Ê½£¨´ËÄ£Ê½ÌáĞÑ¾É°æº¯ÊıµÄÊ¹ÓÃ£¬·ÀÖ¹³ö´í£©
+    glfwInit();//init glfw
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);//glfw's main version is 3
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);//glfw's subversion is 3
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);//
 
     //--------------- window -------------------
-    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);    //½¨Á¢Ò»¸öwindow£¬¾ä±úÎªwindow
+    GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "LearnOpenGL", NULL, NULL);    // generating a window
     if (window == NULL)
     {
         std::cout << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();//ÇåÀíÊÍ·Å×ÊÔ´
+        glfwTerminate();// clean memory
         return -1;
     }
-    glfwMakeContextCurrent(window);//ÉèÖÃµ±Ç°´°¿ÚÉÏÏÂÎÄÎªÖ÷ÉÏÏÂÎÄ
+    glfwMakeContextCurrent(window);// Set current window as main context
     //-----------GLAD init---------------
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) //gladÊÇÓÃÀ´¹ÜÀíOpenGLµÄÖ¸Õë, ³õÊ¼»¯glad
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) //glad init glad(glad is the pointer for managing OpenGL)
     {
         std::cout << "Failed to initialize GLAD" << std::endl;
         return -1;
     }
 
-    //--------------º¯Êı»Øµ÷--------------------
+    //--------------the callback function--------------------
     glfwSetKeyCallback(window, key_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPosCallback(window, mouse_callback);
     glfwSetScrollCallback(window, scroll_callback);
 
-
-
-
-    //--------------ÊÓ¿Ú£¨SDL rect£©----------------
+    //--------------viewportï¼ˆSDL rectï¼‰----------------
     int width, height;
-    glfwGetFramebufferSize(window, &width, &height);        //»ñÈ¡windowµÄ»º³åÇøÖĞµÄ¿íÓë¸ß
-
-    glViewport(0, 0, width, height);                        //×ø±êÓ³Éä£¬Æğµ½·ÖÆÁĞ§¹û£¬ÕâÀïÊÇÈ«´°¿ÚÓ³Éä
-
+    glfwGetFramebufferSize(window, &width, &height);        // get buffer size -- height and width
+    glViewport(0, 0, width, height);                        // Coordinate mapping (full screen here)
     // Build and compile our shader program
     Shader ourShader("shader.vs", "shader.frag");
-
-
+    
     // calculating points of sphere
-    //------------------------------------¶¥µã-------------------------------
-    //---------------ÇòÌåÄ£ĞÍ¶¥µã----------------
-
+    //------------------------------------vertexs-------------------------------
+    //---------------calc sphere model's vertexs----------------
     //--------radius--------
     GLfloat r = 0.6f;
 
-    //ºáÏòÊúÏò·Ö¸î·İÊı
+    // parts size
     GLuint longitude = 20;
     GLuint latitude = 50;
 
-    //Ã¿´ÎÑ­»·µÄÆ«ÒÆÁ¿
+    // offset of each loop
     GLfloat Voffset = 180.0f / longitude;
     GLfloat Hoffset = 360.0f / latitude;
     GLfloat TVoffset = 1.0f / longitude;
     GLfloat THoffset = 1.0f / latitude;
 
-    //ÓëY£¬XÖáµÄ¼Ğ½Ç
+    // intersaction angle for x axis and y axis
     GLfloat a, b, x, y, z, t_x, t_y;
 
-    //Ë÷Òı
+    //ç´¢å¼•
     GLuint vert_index = 0;
     GLuint num = (longitude - 1) * latitude;
     GLuint k = 1;
 
-    //¶¥µãÊı×ép
+    //é¡¶ç‚¹æ•°ç»„p
     GLfloat vertices[10000];
 
-    //µÚÒ»¸öµã
-    //-----¶¥µã-----
+    //ç¬¬ä¸€ä¸ªç‚¹
+    //-----é¡¶ç‚¹-----
 
-    //¸Ä£¬1ºÍ×îºóµßµ¹
+    //æ”¹ï¼Œ1å’Œæœ€åé¢ å€’
     glm::vec3 point = glm::vec3(0.0f, -r, 0.0f);
     memcpy(vertices, glm::value_ptr(point), 3 * sizeof(GLfloat));
     //----- texture -----
@@ -190,29 +181,30 @@ int main(int argc, char* argv[])
         }
     }
 
-    //×îºóÒ»¸öµã
+    //æœ€åä¸€ä¸ªç‚¹
     point = glm::vec3(0.0f, r, 0.0f);
     memcpy(vertices + 5 * vert_index, glm::value_ptr(point), 3 * sizeof(GLfloat));
     tex = glm::vec2(0.5f, 0.0f);
     memcpy(vertices + 5 * vert_index + 3, glm::value_ptr(tex), 2 * sizeof(GLfloat));
-    //--------------------¶¥µã½áÊø------------------------
+    
+    //-------------------- end vertex calculation------------------------
 
 
-    //--------------------¶¨ÒåË÷Òı-------------------------
+    //-------------------- define index -------------------------
     GLuint indices[8000];
 
-    //µÚÒ»²ãË÷Òı
+    //ç¬¬ä¸€å±‚ç´¢å¼•
     for (GLuint j = 0; j < latitude; j++)
     {
         indices[j * 3] = j + 1;
         indices[j * 3 + 1] = 0;
         indices[j * 3 + 2] = (j + 2)%50;
     }
-    // ¹²latitude*3¸öÊı
+    // å…±latitude*3ä¸ªæ•°
 
     GLuint indi_index = latitude * 3;
 
-    //ÖĞ¼äË÷Òı£¬»æÖÆËÄ±ßĞÎ
+    //ä¸­é—´ç´¢å¼•ï¼Œç»˜åˆ¶å››è¾¹å½¢
     for (GLuint i = 0; i < (longitude - 2); i++)
     {
         for (GLuint j = 0; j < latitude; j++)
@@ -232,79 +224,79 @@ int main(int argc, char* argv[])
         indices[indi_index] = (longitude - 2) * latitude + 1 + j;   indi_index++;
         indices[indi_index] = (longitude - 2) * latitude + 1 + (1 + j) % 50;   indi_index++;
     }
-    //---------------------Ë÷Òı½áÊø--------------------------
+    //---------------------end index--------------------------
 
    
 
 
 
-    //---------------Î»ÖÃÏòÁ¿£¨ÖÃÓÚ»­ÃæÖĞĞÄ£©--------------------
+    //---------------position vector (center of window) --------------------
     glm::vec3 spherePositions = glm::vec3(0.0f,  0.0f,  0.0f);
 
 
-    //¸÷ÖÖ»º³å¶ÔÏó
+    //å„ç§ç¼“å†²å¯¹è±¡
     GLuint VBO1, VAO1, EBO1;             //
-    glGenBuffers(1, &VBO1);          //Éú³ÉÃûÎªVBOµÄ»º³åÇø£¨VBO Vertex Buffer Objects£©¶¥µã»º³å¶ÔÏó
-    //Ä¿µÄ£º´¢´æ¶¥µãÊı¾İ£¬ÒÔ¼°ÅäÖÃµÄÊı¾İ
-    glGenVertexArrays(1, &VAO1);    //Éú³ÉVAO¶¥µãÊı×é¶ÔÏó
-    //Ä¿µÄ£º´¢´æ¶¥µãÊôĞÔµ÷ÓÃÅäÖÃ
+    glGenBuffers(1, &VBO1);          //ç”Ÿæˆåä¸ºVBOçš„ç¼“å†²åŒºï¼ˆVBO Vertex Buffer Objectsï¼‰é¡¶ç‚¹ç¼“å†²å¯¹è±¡
+    //ç›®çš„ï¼šå‚¨å­˜é¡¶ç‚¹æ•°æ®ï¼Œä»¥åŠé…ç½®çš„æ•°æ®
+    glGenVertexArrays(1, &VAO1);    //ç”ŸæˆVAOé¡¶ç‚¹æ•°ç»„å¯¹è±¡
+    //ç›®çš„ï¼šå‚¨å­˜é¡¶ç‚¹å±æ€§è°ƒç”¨é…ç½®
     glGenBuffers(1, &EBO1);
-    //Ë÷Òı»º³å¶ÔÏó
+    //ç´¢å¼•ç¼“å†²å¯¹è±¡
 
-    glBindVertexArray(VAO1);         //°ó¶¨VAO1
+    glBindVertexArray(VAO1);         //ç»‘å®šVAO1
 
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);//°Ñ»º³åVBO°ó¶¨µ½¶¥µã¶ÔÏó»º³åÀàĞÍÉÏ£¨GL_ARRAY_BUFFER£©
+    glBindBuffer(GL_ARRAY_BUFFER, VBO1);//æŠŠç¼“å†²VBOç»‘å®šåˆ°é¡¶ç‚¹å¯¹è±¡ç¼“å†²ç±»å‹ä¸Šï¼ˆGL_ARRAY_BUFFERï¼‰
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    //¶¥µãÊı¾İ´¢´æÍê±Ï
+    //é¡¶ç‚¹æ•°æ®å‚¨å­˜å®Œæ¯•
 
 
-    //°ó¶¨Ë÷Òı
+    //ç»‘å®šç´¢å¼•
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO1);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    //¶¨Òå½âÊÍ¶¥µãÎ»ÖÃÊı¾İpointer
+    //å®šä¹‰è§£é‡Šé¡¶ç‚¹ä½ç½®æ•°æ®pointer
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);               //Á´½Ó¶¥µãÊôĞÔ
+    glEnableVertexAttribArray(0);               //é“¾æ¥é¡¶ç‚¹å±æ€§
 
-    //¶¥µãÎÆÀíÊı¾İ
+    //é¡¶ç‚¹çº¹ç†æ•°æ®
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
 
-    //ÑÕÉ«ÊôĞÔµÄlayoutÉèÎª1£¬×îºóÒ»¸ö²ÎÊıÆ«ÒÆÁ¿ÊÇÈı¸öGLfloat£¬ÒòÎªÇ°Èı¸öÊÇÊı¾İĞÅÏ¢
+    //é¢œè‰²å±æ€§çš„layoutè®¾ä¸º1ï¼Œæœ€åä¸€ä¸ªå‚æ•°åç§»é‡æ˜¯ä¸‰ä¸ªGLfloatï¼Œå› ä¸ºå‰ä¸‰ä¸ªæ˜¯æ•°æ®ä¿¡æ¯
 
-    glBindVertexArray(0);           //½â°óVAO
+    glBindVertexArray(0);           //è§£ç»‘VAO
 
-    //ÎÆÀí´¦Àí--------------------------------------------
+    //çº¹ç†å¤„ç†--------------------------------------------
 
    
 
 
 
 
-    //IplImage* image;// = cvLoadImage("3.png", 1);		//¶ÁÍ¼Ïñ
-    //¶ÁÍ¼Ïñ-------------ÕâÀïÎÒÈÏÎªÓ¦¸ÃÔÚÃ¿´ÎµÄÑ­»·ÖĞ¶ÁÈ¡²»Í¬µÄÖ¡Êı¾İ
+    //IplImage* image;// = cvLoadImage("3.png", 1);		//è¯»å›¾åƒ
+    //è¯»å›¾åƒ-------------è¿™é‡Œæˆ‘è®¤ä¸ºåº”è¯¥åœ¨æ¯æ¬¡çš„å¾ªç¯ä¸­è¯»å–ä¸åŒçš„å¸§æ•°æ®
 
 
 
-    //ÎªYUV·Ö±ğ¸÷Éú³ÉÒ»¸ö Y U V
-    GLuint texture, texture2, texture3;                         //Éú³ÉÎÆÀí
+    //ä¸ºYUVåˆ†åˆ«å„ç”Ÿæˆä¸€ä¸ª Y U V
+    GLuint texture, texture2, texture3;                         //ç”Ÿæˆçº¹ç†
     glGenTextures(1, &texture);
     glGenTextures(1, &texture2);
     glGenTextures(1, &texture3);
 
-    glBindTexture(GL_TEXTURE_2D, texture);  //°ó¶¨ÎÆÀí1
+    glBindTexture(GL_TEXTURE_2D, texture);  //ç»‘å®šçº¹ç†1
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);// Set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
-    glBindTexture(GL_TEXTURE_2D, texture2);  //°ó¶¨ÎÆÀí2
+    glBindTexture(GL_TEXTURE_2D, texture2);  //ç»‘å®šçº¹ç†2
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);// Set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glBindTexture(GL_TEXTURE_2D, texture3);  //°ó¶¨ÎÆÀí3
+    glBindTexture(GL_TEXTURE_2D, texture3);  //ç»‘å®šçº¹ç†3
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);// Set texture filtering parameters
@@ -315,44 +307,44 @@ int main(int argc, char* argv[])
     glEnable(GL_DEPTH_TEST);
 
 
-    //---------------------------ÕâÀïÓĞµãÎÊÌâ--------------------------------
+    //---------------------------è¿™é‡Œæœ‰ç‚¹é—®é¢˜--------------------------------
 
 
 
      //--------------------------------------------------------------------
-    //-----------------------------ÊÓÆµ´¦Àí------------------------------
+    //-----------------------------è§†é¢‘å¤„ç†------------------------------
     //------------------------------------------------------------------
 
-    AVFormatContext* pFormatCtx;	//¸ñÊ½ÉÏÏÂÎÄ
-    int				i, videoindex;	//Ë÷Òı
-    AVCodecContext* pCodecCtx = avcodec_alloc_context3(NULL);		//±à½âÂëÆ÷ÉÏÏÂÎÄ
-    AVCodec* pCodec;				//½âÂëÆ÷Ñ¡Ôñ£¿
-    AVFrame* pFrame, * pFrameYUV;	//Ö¡Êı¾İ¡¢ÊÓÆµÖ¡Êı¾İ
-    uint8_t* out_buffer;			//»º³åÇø
-    AVPacket* packet;				//°ü
+    AVFormatContext* pFormatCtx;	//æ ¼å¼ä¸Šä¸‹æ–‡
+    int				i, videoindex;	//ç´¢å¼•
+    AVCodecContext* pCodecCtx = avcodec_alloc_context3(NULL);		//ç¼–è§£ç å™¨ä¸Šä¸‹æ–‡
+    AVCodec* pCodec;				//è§£ç å™¨é€‰æ‹©ï¼Ÿ
+    AVFrame* pFrame, * pFrameYUV;	//å¸§æ•°æ®ã€è§†é¢‘å¸§æ•°æ®
+    uint8_t* out_buffer;			//ç¼“å†²åŒº
+    AVPacket* packet;				//åŒ…
     int y_size;
     int ret, got_picture;
     struct SwsContext* img_convert_ctx;
-    //ÊäÈëÎÄ¼şÂ·¾¶
+    //è¾“å…¥æ–‡ä»¶è·¯å¾„
     char filepath[] = "14.mp4";
     //FILE* fp;
     int frame_cnt;
-    pFormatCtx = avformat_alloc_context();		//·ÖÅäµØÖ·¸ø¸ñÊ½ÉÏÏÂÎÄ
+    pFormatCtx = avformat_alloc_context();		//åˆ†é…åœ°å€ç»™æ ¼å¼ä¸Šä¸‹æ–‡
 
-    /*       --------------¶ÁÈ¡Ò»Ìõ´ı½âÂëµÄÊı¾İÁ÷------------------       */
+    /*       --------------è¯»å–ä¸€æ¡å¾…è§£ç çš„æ•°æ®æµ------------------       */
 
-    //´ò¿ªÊı¾İÁ÷£¬¶ÁÍ·ÎÄ¼ş£¬²»»á´ò¿ª½âÂëÆ÷¡£Èç¹ûÃ»ÓĞÕı³£´ò¿ª£¬·µ»Øcouldnt open input stream
-    //ÕÒµØÖ·£¿
+    //æ‰“å¼€æ•°æ®æµï¼Œè¯»å¤´æ–‡ä»¶ï¼Œä¸ä¼šæ‰“å¼€è§£ç å™¨ã€‚å¦‚æœæ²¡æœ‰æ­£å¸¸æ‰“å¼€ï¼Œè¿”å›couldnt open input stream
+    //æ‰¾åœ°å€ï¼Ÿ
     if (avformat_open_input(&pFormatCtx, filepath, NULL, NULL) != 0) {
         printf("Couldn't open input stream.\n");
         return -1;
     }
-    //²é¿´Êı¾İĞÅÏ¢£¬¸ù¾İÉÏÒ»²½µÄµØÖ·¶ÁÈ¡
+    //æŸ¥çœ‹æ•°æ®ä¿¡æ¯ï¼Œæ ¹æ®ä¸Šä¸€æ­¥çš„åœ°å€è¯»å–
     if (avformat_find_stream_info(pFormatCtx, NULL) < 0) {
         printf("Couldn't find stream information.\n");
         return -1;
     }
-    //Ñ­»·ÕÒÊı¾İÁ÷ĞÅÏ¢£¨Ë÷Òı£©
+    //å¾ªç¯æ‰¾æ•°æ®æµä¿¡æ¯ï¼ˆç´¢å¼•ï¼‰
     videoindex = -1;
     for (i = 0; i < (pFormatCtx->nb_streams); i++)
         if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -366,29 +358,29 @@ int main(int argc, char* argv[])
 
     /*       --------------decoding video------------------       */
 
-    avcodec_parameters_to_context(pCodecCtx, pFormatCtx->streams[videoindex]->codecpar);		//¶ÁÈ¡½âÂëÆ÷ÉÏÏÂÎÄ
-    pCodec = avcodec_find_decoder(pCodecCtx->codec_id);		//´ÓÉÏÏÂÎÄĞÅÏ¢ÕÒÊÊÓÃµÄ±à½âÂëÆ÷
+    avcodec_parameters_to_context(pCodecCtx, pFormatCtx->streams[videoindex]->codecpar);		//è¯»å–è§£ç å™¨ä¸Šä¸‹æ–‡
+    pCodec = avcodec_find_decoder(pCodecCtx->codec_id);		//ä»ä¸Šä¸‹æ–‡ä¿¡æ¯æ‰¾é€‚ç”¨çš„ç¼–è§£ç å™¨
     if (pCodec == NULL) {
         printf("Codec not found.\n");
         return -1;
     }
-    if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {		//´ò¿ª½âÂëÆ÷
+    if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {		//æ‰“å¼€è§£ç å™¨
         printf("Could not open codec.\n");
         return -1;
     }
 
-    pFrame = av_frame_alloc();								//ÉêÇëÖ¡ĞÅÏ¢µÄ¿Õ¼ä£¨ºóÃæÒª¼ÇµÃÊÍ·Å£©
-    pFrameYUV = av_frame_alloc();							//ÉêÇëYUVÖ¡ĞÅÏ¢µÄ¿Õ¼ä£¨Í¬ÑùÒª¼ÇµÃÊÍ·Å£©
+    pFrame = av_frame_alloc();								//ç”³è¯·å¸§ä¿¡æ¯çš„ç©ºé—´ï¼ˆåé¢è¦è®°å¾—é‡Šæ”¾ï¼‰
+    pFrameYUV = av_frame_alloc();							//ç”³è¯·YUVå¸§ä¿¡æ¯çš„ç©ºé—´ï¼ˆåŒæ ·è¦è®°å¾—é‡Šæ”¾ï¼‰
 
-    //Ò»Ö¡Í¼Æ¬ÒªµÄÊı¾İÄÚ´æ´óĞ¡
+    //ä¸€å¸§å›¾ç‰‡è¦çš„æ•°æ®å†…å­˜å¤§å°
     out_buffer = (uint8_t*)av_malloc(av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1));
     //out_buffer = (uint8_t*)av_malloc(avpicture_get_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height));			
-    //´Ëº¯Êı¸ß°æ±¾ffmpegÒÑ¾­²»ÊÊÓÃ£¬¸ü¸ÄÎªÉÏÃæĞÎÊ½
+    //æ­¤å‡½æ•°é«˜ç‰ˆæœ¬ffmpegå·²ç»ä¸é€‚ç”¨ï¼Œæ›´æ”¹ä¸ºä¸Šé¢å½¢å¼
 
     av_image_fill_arrays(pFrameYUV->data, pFrameYUV->linesize, out_buffer, AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
     packet = (AVPacket*)av_malloc(sizeof(AVPacket));
 
-    //Output Info-----------------------------Êä³öĞÅÏ¢-------------------
+    //Output Info-----------------------------è¾“å‡ºä¿¡æ¯-------------------
     printf("--------------- File Information ----------------\n");
     av_dump_format(pFormatCtx, 0, filepath, 0);
     printf("-------------------------------------------------\n");
@@ -411,17 +403,17 @@ int main(int argc, char* argv[])
         
         if (glfwWindowShouldClose(window))   break;
 
-        // ------´°¿ÚÃ¿´ÎË¢ĞÂµÄ×¼±¸-------
+        // ------çª—å£æ¯æ¬¡åˆ·æ–°çš„å‡†å¤‡-------
         // Calculate deltatime of current frame
         GLfloat currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         //check
-        glfwPollEvents();//¼ì²é²¢µ÷ÓÃÊÂ¼ş
-        do_movement();      //¼ì²â²¢µ÷ÓÃÊÂ¼ş
+        glfwPollEvents();//æ£€æŸ¥å¹¶è°ƒç”¨äº‹ä»¶
+        do_movement();      //æ£€æµ‹å¹¶è°ƒç”¨äº‹ä»¶
         //clear
-        glClearColor(0.5f, 0.1f, 0.8f, 1.0);    //ÉèÖÃÇå¿ÕÆÁÄ»»º³åµÄÑÕÉ«£¬×´Ì¬ÉèÖÃº¯Êı
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//Çå³ı»º³åÇø
+        glClearColor(0.5f, 0.1f, 0.8f, 1.0);    //è®¾ç½®æ¸…ç©ºå±å¹•ç¼“å†²çš„é¢œè‰²ï¼ŒçŠ¶æ€è®¾ç½®å‡½æ•°
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//æ¸…é™¤ç¼“å†²åŒº
 
         if (packet->stream_index == videoindex) {
             ret = avcodec_send_packet(pCodecCtx, packet);
@@ -432,8 +424,8 @@ int main(int argc, char* argv[])
                 return -1;
             }
 
-            //pframe ÊÇÔ­Ê¼YUVÎÄ¼ş£¬pframeYUVÊÇ¾­¹ısws_scale²Ã¼ôµÄ
-            if (!got_picture) {		//ÕâÀïgot_pictureÎª0ÊÇ³É¹¦£¬ºÍ¾É°æº¯Êı²»Ò»Ñù£¬ËùÒÔ¼ÓÁË£¡---
+            //pframe æ˜¯åŸå§‹YUVæ–‡ä»¶ï¼ŒpframeYUVæ˜¯ç»è¿‡sws_scaleè£å‰ªçš„
+            if (!got_picture) {		//è¿™é‡Œgot_pictureä¸º0æ˜¯æˆåŠŸï¼Œå’Œæ—§ç‰ˆå‡½æ•°ä¸ä¸€æ ·ï¼Œæ‰€ä»¥åŠ äº†ï¼---
                 sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height,
                     pFrameYUV->data, pFrameYUV->linesize);
                 printf("Decoded frame index: %d\n", frame_cnt);
@@ -442,19 +434,19 @@ int main(int argc, char* argv[])
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, texture);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, pixel_w, pixel_h, 0, GL_RED, GL_UNSIGNED_BYTE, pFrameYUV->data[0]);
-                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture"), 0);//ÖÆ¶¨uniform±äÁ¿Öµ
+                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture"), 0);//åˆ¶å®šuniformå˜é‡å€¼
                 glGenerateMipmap(GL_TEXTURE_2D);
                 //U
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, texture2);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, pixel_w / 2, pixel_h / 2, 0, GL_RED, GL_UNSIGNED_BYTE, pFrameYUV->data[1]);
-                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture2"), 1);//ÖÆ¶¨uniform±äÁ¿Öµ
+                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture2"), 1);//åˆ¶å®šuniformå˜é‡å€¼
                 glGenerateMipmap(GL_TEXTURE_2D);
                 //V
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, texture3);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, pixel_w / 2, pixel_h / 2, 0, GL_RED, GL_UNSIGNED_BYTE, pFrameYUV->data[2]);
-                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture3"), 2);//ÖÆ¶¨uniform±äÁ¿Öµ
+                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture3"), 2);//åˆ¶å®šuniformå˜é‡å€¼
                 glGenerateMipmap(GL_TEXTURE_2D);
 
                 frame_cnt++;
@@ -463,14 +455,14 @@ int main(int argc, char* argv[])
         }
         av_packet_unref(packet);
 
-        ourShader.Use();               //ÆôÓÃ×ÅÉ«Æ÷³ÌĞò   
+        ourShader.Use();               //å¯ç”¨ç€è‰²å™¨ç¨‹åº   
 
-        //¹Û²ì¾ØÕó
+        //è§‚å¯ŸçŸ©é˜µ
         glm::mat4 view;
-        // ×¢Òâ£¬ÎÒÃÇ½«¾ØÕóÏòÎÒÃÇÒª½øĞĞÒÆ¶¯³¡¾°µÄ·´ÏòÒÆ¶¯¡£
+        // æ³¨æ„ï¼Œæˆ‘ä»¬å°†çŸ©é˜µå‘æˆ‘ä»¬è¦è¿›è¡Œç§»åŠ¨åœºæ™¯çš„åå‘ç§»åŠ¨ã€‚
         view = camera.GetViewMatrix();
 
-        //Í¶Ó°¾ØÕó
+        //æŠ•å½±çŸ©é˜µ
         glm::mat4 projection;
         projection = glm::perspective(camera.Zoom, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
         //fov = 45 degree//
@@ -492,7 +484,7 @@ int main(int argc, char* argv[])
         model = glm::translate(model, spherePositions);
         GLfloat angle = glm::radians(20.0f);/* 2 * (GLfloat)glfwGetTime();*/
 
-        //¸Ä£º --------model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
+        //æ”¹ï¼š --------model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
         model = glm::rotate(model, 0.0f, glm::vec3(1.0f, 0.3f, 0.5f));
         glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 
@@ -502,7 +494,7 @@ int main(int argc, char* argv[])
 
         glBindVertexArray(0);
 
-        glfwSwapBuffers(window);//swap color buffer, ½»»»ÑÕÉ«»º³å£¬ÓÃÀ´»æÖÆÍ¼Ïñ
+        glfwSwapBuffers(window);//swap color buffer, äº¤æ¢é¢œè‰²ç¼“å†²ï¼Œç”¨æ¥ç»˜åˆ¶å›¾åƒ
 
 
         //av_free_packet(packet);
@@ -536,7 +528,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             keys[key] = false;
     }
 
-}       //normalize ±ê×¼»¯        cross ²æ³Ë
+}       //normalize æ ‡å‡†åŒ–        cross å‰ä¹˜
 
 void do_movement()
 {

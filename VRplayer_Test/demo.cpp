@@ -142,11 +142,11 @@ int main(int argc, char* argv[])
     GLuint num = (longitude - 1) * latitude;
     GLuint k = 1;
 
-    //顶点数组p
+    //vertex array p
     GLfloat vertices[10000];
 
-    //第一个点
-    //-----顶点-----
+    // first vertex
+    //----- vertex -----
 
     //改，1和最后颠倒
     glm::vec3 point = glm::vec3(0.0f, -r, 0.0f);
@@ -179,7 +179,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    //最后一个点
+    // last vertex
     point = glm::vec3(0.0f, r, 0.0f);
     memcpy(vertices + 5 * vert_index, glm::value_ptr(point), 3 * sizeof(GLfloat));
     tex = glm::vec2(0.5f, 0.0f);
@@ -191,18 +191,18 @@ int main(int argc, char* argv[])
     //-------------------- define index -------------------------
     GLuint indices[8000];
 
-    //第一层索引
+    //first layer index
     for (GLuint j = 0; j < latitude; j++)
     {
         indices[j * 3] = j + 1;
         indices[j * 3 + 1] = 0;
         indices[j * 3 + 2] = (j + 2)%50;
     }
-    // 共latitude*3个数
+    // latitude*3 numbers
 
     GLuint indi_index = latitude * 3;
 
-    //中间索引，绘制四边形
+    //middle index -- draw quadrangles
     for (GLuint i = 0; i < (longitude - 2); i++)
     {
         for (GLuint j = 0; j < latitude; j++)
@@ -232,69 +232,67 @@ int main(int argc, char* argv[])
     glm::vec3 spherePositions = glm::vec3(0.0f,  0.0f,  0.0f);
 
 
-    //各种缓冲对象
+    // buffer objects
     GLuint VBO1, VAO1, EBO1;             //
-    glGenBuffers(1, &VBO1);          //生成名为VBO的缓冲区（VBO Vertex Buffer Objects）顶点缓冲对象
-    //目的：储存顶点数据，以及配置的数据
-    glGenVertexArrays(1, &VAO1);    //生成VAO顶点数组对象
-    //目的：储存顶点属性调用配置
+    glGenBuffers(1, &VBO1);          // VBO Vertex Buffer Objects generating
+    // aim: store vertex datas & settings
+    glGenVertexArrays(1, &VAO1);    // generating VAO vertex objects
+    //
     glGenBuffers(1, &EBO1);
-    //索引缓冲对象
+    // index buffer object
 
-    glBindVertexArray(VAO1);         //绑定VAO1
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO1);//把缓冲VBO绑定到顶点对象缓冲类型上（GL_ARRAY_BUFFER）
+    glBindVertexArray(VAO1);         // bound VAO1
+    glBindBuffer(GL_ARRAY_BUFFER, VBO1);    // bound the VBO buffer object to vertex buffer object（GL_ARRAY_BUFFER）
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    //顶点数据储存完毕
+    //finishing storing vertex data
 
 
-    //绑定索引
+    // bound index
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO1);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    //定义解释顶点位置数据pointer
+    // define the pointer of vertex position
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);               //链接顶点属性
+    glEnableVertexAttribArray(0);               // linking vertexes properties
 
-    //顶点纹理数据
+    // texture data of vertex
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(2);
 
-    //颜色属性的layout设为1，最后一个参数偏移量是三个GLfloat，因为前三个是数据信息
+    //
+    
+    // set layout of color property as 1
+    glBindVertexArray(0);           // unbound VAO
 
-    glBindVertexArray(0);           //解绑VAO
-
-    //纹理处理--------------------------------------------
+    // texture operating--------------------------------------------
 
    
 
 
 
 
-    //IplImage* image;// = cvLoadImage("3.png", 1);		//读图像
-    //读图像-------------这里我认为应该在每次的循环中读取不同的帧数据
+    //IplImage* image;// = cvLoadImage("3.png", 1);		// input image
+    // for videos, should read frames 
 
-
-
-    //为YUV分别各生成一个 Y U V
+    // generating different texture for Y, U, and V stream
     GLuint texture, texture2, texture3;                         //生成纹理
     glGenTextures(1, &texture);
     glGenTextures(1, &texture2);
     glGenTextures(1, &texture3);
 
-    glBindTexture(GL_TEXTURE_2D, texture);  //绑定纹理1
+    glBindTexture(GL_TEXTURE_2D, texture);  //bound texture 1
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);// Set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     
-    glBindTexture(GL_TEXTURE_2D, texture2);  //绑定纹理2
+    glBindTexture(GL_TEXTURE_2D, texture2);  //bound textrure 2
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);// Set texture filtering parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-    glBindTexture(GL_TEXTURE_2D, texture3);  //绑定纹理3
+    glBindTexture(GL_TEXTURE_2D, texture3);  //bound textrure 3
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	// Set texture wrapping to GL_REPEAT (usually basic wrapping method)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);// Set texture filtering parameters
@@ -304,45 +302,35 @@ int main(int argc, char* argv[])
 
     glEnable(GL_DEPTH_TEST);
 
-
-    //---------------------------这里有点问题--------------------------------
-
-
-
      //--------------------------------------------------------------------
-    //-----------------------------视频处理------------------------------
+    //-----------------------------video processing------------------------------
     //------------------------------------------------------------------
 
-    AVFormatContext* pFormatCtx;	//格式上下文
-    int				i, videoindex;	//索引
-    AVCodecContext* pCodecCtx = avcodec_alloc_context3(NULL);		//编解码器上下文
-    AVCodec* pCodec;				//解码器选择？
-    AVFrame* pFrame, * pFrameYUV;	//帧数据、视频帧数据
-    uint8_t* out_buffer;			//缓冲区
-    AVPacket* packet;				//包
+    AVFormatContext* pFormatCtx;	// format contex
+    int				i, videoindex;	// index
+    AVCodecContext* pCodecCtx = avcodec_alloc_context3(NULL);		//coding context
+    AVCodec* pCodec;				// encoder selecting
+    AVFrame* pFrame, * pFrameYUV;	// fram data stream
+    uint8_t* out_buffer;			// out buffer
+    AVPacket* packet;				// packet
     int y_size;
     int ret, got_picture;
     struct SwsContext* img_convert_ctx;
-    //输入文件路径
+    // input path
     char filepath[] = "14.mp4";
     //FILE* fp;
     int frame_cnt;
-    pFormatCtx = avformat_alloc_context();		//分配地址给格式上下文
+    pFormatCtx = avformat_alloc_context();		//
 
-    /*       --------------读取一条待解码的数据流------------------       */
-
-    //打开数据流，读头文件，不会打开解码器。如果没有正常打开，返回couldnt open input stream
-    //找地址？
+    /*       -------------- read a video steam------------------       */
     if (avformat_open_input(&pFormatCtx, filepath, NULL, NULL) != 0) {
         printf("Couldn't open input stream.\n");
         return -1;
     }
-    //查看数据信息，根据上一步的地址读取
     if (avformat_find_stream_info(pFormatCtx, NULL) < 0) {
         printf("Couldn't find stream information.\n");
         return -1;
     }
-    //循环找数据流信息（索引）
     videoindex = -1;
     for (i = 0; i < (pFormatCtx->nb_streams); i++)
         if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -356,29 +344,26 @@ int main(int argc, char* argv[])
 
     /*       --------------decoding video------------------       */
 
-    avcodec_parameters_to_context(pCodecCtx, pFormatCtx->streams[videoindex]->codecpar);		//读取解码器上下文
-    pCodec = avcodec_find_decoder(pCodecCtx->codec_id);		//从上下文信息找适用的编解码器
+    avcodec_parameters_to_context(pCodecCtx, pFormatCtx->streams[videoindex]->codecpar);		//read coding context
+    pCodec = avcodec_find_decoder(pCodecCtx->codec_id);		// matching encoder
     if (pCodec == NULL) {
         printf("Codec not found.\n");
         return -1;
     }
-    if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {		//打开解码器
+    if (avcodec_open2(pCodecCtx, pCodec, NULL) < 0) {		// open encoder
         printf("Could not open codec.\n");
         return -1;
     }
+    pFrame = av_frame_alloc();								 
+    pFrameYUV = av_frame_alloc();							 
 
-    pFrame = av_frame_alloc();								//申请帧信息的空间（后面要记得释放）
-    pFrameYUV = av_frame_alloc();							//申请YUV帧信息的空间（同样要记得释放）
-
-    //一帧图片要的数据内存大小
+    // data size of a frame
     out_buffer = (uint8_t*)av_malloc(av_image_get_buffer_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1));
-    //out_buffer = (uint8_t*)av_malloc(avpicture_get_size(AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height));			
-    //此函数高版本ffmpeg已经不适用，更改为上面形式
 
     av_image_fill_arrays(pFrameYUV->data, pFrameYUV->linesize, out_buffer, AV_PIX_FMT_YUV420P, pCodecCtx->width, pCodecCtx->height, 1);
     packet = (AVPacket*)av_malloc(sizeof(AVPacket));
 
-    //Output Info-----------------------------输出信息-------------------
+    //Output Info
     printf("--------------- File Information ----------------\n");
     av_dump_format(pFormatCtx, 0, filepath, 0);
     printf("-------------------------------------------------\n");
@@ -401,17 +386,17 @@ int main(int argc, char* argv[])
         
         if (glfwWindowShouldClose(window))   break;
 
-        // ------窗口每次刷新的准备-------
+        // ------prepare for each refreshing of window-------
         // Calculate deltatime of current frame
         GLfloat currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
         //check
-        glfwPollEvents();//检查并调用事件
-        do_movement();      //检测并调用事件
+        glfwPollEvents();
+        do_movement();     
         //clear
-        glClearColor(0.5f, 0.1f, 0.8f, 1.0);    //设置清空屏幕缓冲的颜色，状态设置函数
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);//清除缓冲区
+        glClearColor(0.5f, 0.1f, 0.8f, 1.0);    // settings(color of clearing the window buffer)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);    // clear buffer
 
         if (packet->stream_index == videoindex) {
             ret = avcodec_send_packet(pCodecCtx, packet);
@@ -422,8 +407,8 @@ int main(int argc, char* argv[])
                 return -1;
             }
 
-            //pframe 是原始YUV文件，pframeYUV是经过sws_scale裁剪的
-            if (!got_picture) {		//这里got_picture为0是成功，和旧版函数不一样，所以加了！---
+            //pframe  raw YUV file. pframeYUV, file scaled by sws_scale
+            if (!got_picture) {		//  got_picture == 0 --> success
                 sws_scale(img_convert_ctx, (const uint8_t* const*)pFrame->data, pFrame->linesize, 0, pCodecCtx->height,
                     pFrameYUV->data, pFrameYUV->linesize);
                 printf("Decoded frame index: %d\n", frame_cnt);
@@ -432,19 +417,19 @@ int main(int argc, char* argv[])
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, texture);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, pixel_w, pixel_h, 0, GL_RED, GL_UNSIGNED_BYTE, pFrameYUV->data[0]);
-                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture"), 0);//制定uniform变量值
+                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture"), 0);//boudn uniform value
                 glGenerateMipmap(GL_TEXTURE_2D);
                 //U
                 glActiveTexture(GL_TEXTURE1);
                 glBindTexture(GL_TEXTURE_2D, texture2);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, pixel_w / 2, pixel_h / 2, 0, GL_RED, GL_UNSIGNED_BYTE, pFrameYUV->data[1]);
-                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture2"), 1);//制定uniform变量值
+                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture2"), 1);//boudn uniform value
                 glGenerateMipmap(GL_TEXTURE_2D);
                 //V
                 glActiveTexture(GL_TEXTURE2);
                 glBindTexture(GL_TEXTURE_2D, texture3);
                 glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, pixel_w / 2, pixel_h / 2, 0, GL_RED, GL_UNSIGNED_BYTE, pFrameYUV->data[2]);
-                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture3"), 2);//制定uniform变量值
+                glUniform1i(glGetUniformLocation(ourShader.Program, "ourTexture3"), 2);//boudn uniform value
                 glGenerateMipmap(GL_TEXTURE_2D);
 
                 frame_cnt++;
@@ -453,14 +438,14 @@ int main(int argc, char* argv[])
         }
         av_packet_unref(packet);
 
-        ourShader.Use();               //启用着色器程序   
+        ourShader.Use();               //shadering
 
-        //观察矩阵
+        // observing matrix
         glm::mat4 view;
-        // 注意，我们将矩阵向我们要进行移动场景的反向移动。
+        // moving to opposite direction as human feeling
         view = camera.GetViewMatrix();
 
-        //投影矩阵
+        // projection matrix
         glm::mat4 projection;
         projection = glm::perspective(camera.Zoom, (GLfloat)width / (GLfloat)height, 0.1f, 100.0f);
         //fov = 45 degree//
@@ -514,6 +499,8 @@ int main(int argc, char* argv[])
     return 0;
 }
 
+
+// interaction functions of windows
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -526,7 +513,7 @@ void key_callback(GLFWwindow* window, int key, int scancode, int action, int mod
             keys[key] = false;
     }
 
-}       //normalize 标准化        cross 叉乘
+}       //normalize         cross 
 
 void do_movement()
 {

@@ -1,7 +1,7 @@
 # Panorama Video player `C++`
 This project was realized by OpenCV, GLAD, GLFW, GLM, and FFmpeg. 
 --
-In this project, a panorama video player is generated. The main idea is listed below. You can see demo videos at https://drive.google.com/file/d/1JgR2DlJy7TDk4CfFzg9GMgJIfntZiyI-/view?usp=sharing
+In this project, a panorama video player is generated. The main idea is listed below. You can see the `demo video` at https://drive.google.com/file/d/1JgR2DlJy7TDk4CfFzg9GMgJIfntZiyI-/view?usp=sharing
 
 VR is popular nowadays. With panorama multimedia sources, I want to realize a player which can use them. Meanwhile, I’m interested in games and videos. So, the first thing that comes to my mind is realizing a VR player. 
 
